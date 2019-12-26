@@ -1,0 +1,242 @@
+---
+title: "Rice Creek and Heath Creek Time Series Data"
+author: "Emily Bristol"
+date: "June 18, 2018"
+output: pdf_document
+---
+
+```{r, include=F, warning=FALSE}
+
+## I think a lot of this script comes from the "Stream biogeochem.R" file, but this RMarkdown gives a nice print out of the data.
+
+library(tidyverse)
+setwd()
+
+water <- read.csv("Water-chemistry.csv")
+water$date <- as.Date(water$date, format = "%m/%d/%y")
+
+#Sorting data by location
+RP <- water[which (water$location == "RP"), ] # Rice Creek - Drainage pipe
+RC <- water[which (water$location == "RC"), ] # Rice Creek - Cannon
+RD <- water[which (water$location == "RD"), ] # Rice Creek - Decker
+HA <- water[which (water$location == "HA"), ] # Heath Creek - Albers
+HC <- water[which (water$location == "HC"), ] # Heath Creek - Cannon
+rice <- water[which (water$stream == "rice"), ] # Rice Creek (excluding pipe)
+heath <- water[which (water$stream == "heath"), ] # Heath Creek
+
+```
+
+## Time Series Plots
+
+Points are means of replicate samples.  Error bars display standard error.  Nitrate concentrations are consistently highest in Rice Creek, and DOC concentrations are consistently highest in Heath Creek.  Of the two streams, Rice Creek has the highest concentration of nitrous oxide.  Heath Creek-Albers and Rice Creek-Decker have the highest methane concentrations, which likely is explained by finer sediments with high organic matter content.  The subsurface tile drainage has higher concentrations of nitrous oxide, which I predict is from nitrification in oxic soils.
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, results = "hide", message = FALSE, fig.width=7.5, fig.height=4, fig.align="left"}
+
+ggplot(water[which (water$location != "RP"), ], aes(x=date, y=nitrate)) + 
+  geom_point(aes(group = location, color = location, shape = location)) +
+  geom_errorbar(aes(ymin=nitrate-SE.nitrate, ymax=nitrate+SE.nitrate, color = location), width=.1) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  ylab(expression(paste(NO[3]^"-", ~mg, ~L^-1))) + 
+  xlab("") +
+  geom_line(aes(color=location, group = location)) +
+  scale_color_grey(name = "", labels = c("Heath Creek - Albers", "Heath Creek - Cannon",
+                                           "Rice Creek - Cannon", "Rice Creek - Decker")) +
+  scale_shape_discrete(name = "", labels = c("Heath Creek - Albers", "Heath Creek - Cannon",
+                                           "Rice Creek - Cannon", "Rice Creek - Decker")) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d") +
+  theme(axis.text.x = element_text(vjust = 0.5))
+
+ggplot(water[which (water$location != "RP"), ], aes(x=date, y=N2O)) + 
+  geom_point(aes(color = location, group = location, shape = location)) +
+  geom_errorbar(aes(ymin=N2O-SE.N2O, ymax=N2O+SE.N2O, color = location, group = location),   width=.05) +
+  theme_classic() + 
+  xlab("") +
+  ylab(expression(paste(N[2], O, " ", mu, "atm"))) + 
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d") +
+  geom_line(aes(color = location, group = location)) +
+  scale_color_grey(name = "", labels = c("Heath Creek - Albers", "Heath Creek - Cannon",
+                                           "Rice Creek - Cannon", "Rice Creek - Decker")) +
+  scale_shape_discrete(name = "", labels = c("Heath Creek - Albers", "Heath Creek - Cannon",
+                                           "Rice Creek - Cannon", "Rice Creek - Decker")) +
+  theme(axis.text.x = element_text(vjust = 0.5))
+
+ggplot(water[which (water$location != "RP"), ], aes(x=date, y=DOC)) + 
+  geom_point(aes(color = location, group = location, shape = location)) +
+  geom_errorbar(aes(ymin=DOC-SE.DOC, ymax=DOC+SE.DOC, color = location), width=.1) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  xlab("") +
+  ylab(expression(paste("DOC (mg ", L^-1, ")")))  + 
+  geom_line(aes(color = location, group = location)) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d") +
+  geom_line(aes(color = location, group = location)) +
+  scale_color_grey(name = "", labels = c("Heath Creek - Albers", "Heath Creek - Cannon",
+                                           "Rice Creek - Cannon", "Rice Creek - Decker")) +
+  scale_shape_discrete(name = "", labels = c("Heath Creek - Albers", "Heath Creek - Cannon",
+                                           "Rice Creek - Cannon", "Rice Creek - Decker")) +
+  theme(axis.text.x = element_text(vjust = 0.5))
+
+ggplot(water[which (water$location != "RP"), ], aes(x=date, y=CH4)) + 
+  geom_point(aes(color = location, group = location, shape = location)) +
+  geom_errorbar(aes(ymin=CH4-SE.methane, ymax=CH4+SE.methane, color = location, group = location),
+                width=.01) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  theme_classic() + 
+  xlab("") +
+  ylab(expression(paste(CH[4], "(", ~mu, "atm)"))) + 
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d") +
+  geom_line(aes(color = location)) +
+  scale_color_grey(name = "", labels = c("Heath Creek - Albers", "Heath Creek - Cannon",
+                                           "Rice Creek - Cannon", "Rice Creek - Decker")) +
+  scale_shape_discrete(name = "", labels = c("Heath Creek - Albers", "Heath Creek - Cannon",
+                                           "Rice Creek - Cannon", "Rice Creek - Decker")) +
+  theme(axis.text.x = element_text(vjust = 0.5)) 
+
+ggplot(RP, aes(x = date)) + 
+  geom_point(aes(y=nitrate, group = location, shape = location)) +
+  geom_line(aes(y=nitrate)) +
+  geom_errorbar(aes(ymin=nitrate-SE.nitrate, ymax=nitrate+SE.nitrate), width=.05) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  theme_classic() + 
+  xlab("") +
+  ylab(expression(paste(NO[3]^"-", ~mg, ~L^-1))) + 
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d") +
+  scale_shape_manual(name = "", values = c(9), labels = c("Rice Creek-Pipe")) 
+
+ggplot(RP, aes(x = date)) + 
+  geom_point(aes(y=N2O, shape = location)) +
+  geom_line(aes(y=N2O)) +
+  geom_errorbar(aes(ymin=N2O-SE.N2O, ymax=N2O+SE.N2O), width=.05) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  theme_classic() + 
+  xlab("") +
+  ylab(expression(paste(N[2], O, " ", mu, "atm"))) + 
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d") +
+  scale_shape_manual(name = "", values = c(9), labels = c("Rice Creek-Pipe")) 
+
+```
+
+## Exploring linear relationships between nitrous oxide and nitrate
+
+There is a significant, positive linear relationship between nitrous oxide and nitrate at every stream sampling location.  No linear relationship between nitrous oxide and nitrate in the subsurface tile drainage, which could mean the high nitrate concentrations do not limit nitrification or denitrification. 
+
+```{r, echo = FALSE, warning = FALSE, comment = "", fig.width=5.5, fig.height=4, fig.align="left"}
+ggplot(RC, aes(x=nitrate, y=N2O, col = temp)) + 
+  geom_point(shape=20) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  xlab(expression(paste(NO[3]^"-", ~mg, ~L^-1))) + 
+  ylab(expression(paste(N[2], O, " ", mu, "atm"))) +
+  scale_colour_gradient(low="white", high = "black") +
+  ggtitle("Rice Creek - Cannon")
+
+summary(lm(N2O~nitrate, data = RC))
+
+ggplot(RD, aes(x=nitrate, y=N2O, col = temp)) + 
+  geom_point(shape=20) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  xlab(expression(paste(NO[3]^"-", ~mg, ~L^-1))) + 
+  ylab(expression(paste(N[2], O, " ", mu, "atm"))) +
+  scale_colour_gradient(low = "white", high = "black") +
+  ggtitle("Rice Creek - Decker")
+
+summary(lm(N2O~nitrate, data = RD))
+
+ggplot(HC, aes(x=nitrate, y=N2O, col = temp)) + 
+  geom_point(shape=20) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  xlab(expression(paste(NO[3]^"-", ~mg, ~L^-1))) + 
+  ylab(expression(paste(N[2], O, " ", mu, "atm"))) +
+  scale_colour_gradient(low = "white", high = "black") +
+  ggtitle("Heath Creek - Cannon")
+
+summary(lm(N2O~nitrate, data = HC))
+
+ggplot(HA, aes(x=nitrate, y=N2O, col = temp)) + 
+  geom_point(shape=20) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  xlab(expression(paste(NO[3]^"-", ~mg, ~L^-1))) + 
+  ylab(expression(paste(N[2], O, " ", mu, "atm"))) +
+  scale_colour_gradient(low = "white", high = "black") + 
+  ggtitle("Heath Creek - Albers")
+
+summary(lm(N2O~nitrate, data = HA))
+
+summary(lm(N2O~nitrate, data = RP))
+
+```
+
+## Linear models of dissoved gases vs. temperature
+
+Dissolved nitrous oxide is positively correlated with temperature in both streams.  Dissolved methane is possitively correlated with temperature in Heath Creek and Rice Creek-Cannon, but not Rice Creek-Decker.
+
+```{r, warning=FALSE, comment = ""}
+summary(lm(N2O~temp, data = rice))
+summary(lm(N2O~temp, data=heath))
+summary(lm(CH4~temp, data=RC))
+summary(lm(CH4~temp, data = heath))
+
+```
+
+## Exploring linear relationships between methane and DOC
+
+No positive linear correlation between methane and dissolved organic carbon in any sampling location. (Significant negative relationship in Rice Creek-Decker.)
+
+## Exploring linear relationships between methane and nitrate
+
+There is a significant, negative linear relationship between methane and nitrate in the Rice Creek-Decker sampling location.  This may be evidence of denitrifiers outcompeting methanogens for acetate, suggesting that the acetoclastic pathway is the dominate pathway of methanogenesis at Rice Creek-Decker.  However, this relationship is not significant in other stream sampling locations. This relationship also contridicts the results of the sediment incubation, where the greatest methane production occured with the high nitrate, high DOC water treatment.
+
+```{r, echo=FALSE, warning=FALSE, comment = "", fig.width=5.5, fig.height=4, fig.align="left"}
+ggplot(RD, aes(x=nitrate, y=CH4)) + 
+  geom_point(shape=20) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  xlab(expression(paste(NO[3]^"-", ~mg, ~L^-1))) + 
+  ylab(expression(paste(CH[4], " ", mu, "atm"))) +
+  ggtitle("Rice Creek - Decker")
+
+summary(lm(CH4~nitrate, data=RD))
+
+```
+
+## Precipitation
+
+I graphed total precipitation each day (mm) from Oct 1, 2015 through Aug 1, 2016 to see if precipitation explained some of the spikes in nitrate concentrations. I predict that intense rainfall would wash off fertilizer from fields, causing the spike in nutrients. The spikes in Rice Creek nitrate concentrations during mid-November and mid-June overlap with spikes in precipitation. However, we do not see a spike in nitrate concentrations after high rainfall in early July.  
+
+```{r, echo=F, warning=F}
+
+precip <- read.csv("~/Dropbox/Stream biogeochemistry research/Precipitation.csv")
+
+precip$date <- as.Date(precip$date, "%Y-%m-%d")
+
+ggplot(precip, aes(x=date, y=dailyPrecip)) +
+  geom_line() +
+  theme_classic() +
+  ylab("Daily Precipitation (mm)") +
+  xlab("") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")
+
+```
+
